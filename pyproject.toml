@@ -1,0 +1,19 @@
+[project]
+name = "compression-experiments"
+version = "0.1.0"
+authors = ["Ailurus"]
+description = ""
+requires-python = ">=3.12"
+
+dependencies = [
+    "pre-commit",
+    "torch>=2.6.4",
+    "tqdm>=4.60.0",
+    "datasets>=2.0.0",
+    "torchvision>=0.15.0",
+    "transformers>=4.20.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
