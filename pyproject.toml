@@ -8,10 +8,13 @@ requires-python = ">=3.12"
 dependencies = [
     "pre-commit",
     "torch>=2.6.4",
+    "numpy<2.0.0",
     "tqdm>=4.60.0",
     "datasets>=2.0.0",
     "torchvision>=0.15.0",
-    "transformers>=4.20.0",
+    "transformers==5.0.0rc1",
+    "autoawq",
+    "lighteval"
 ]
 
 [build-system]

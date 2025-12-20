@@ -14,25 +14,22 @@ def main():
         "--path-to-model",
         type=str,
         default="Qwen/Qwen3-8B",
-        help="Path to the model (local or Hugging Face hub). Default: Qwen/Qwen3-8B"
+        help="Path to the model (local or Hugging Face hub). Default: Qwen/Qwen3-8B",
     )
     parser.add_argument(
-        "--tasks",
-        type=str,
-        default="mmlu",
-        help="Task to evaluate on. Default: mmlu"
+        "--tasks", type=str, default="mmlu", help="Task to evaluate on. Default: mmlu"
     )
     parser.add_argument(
         "--limit",
         type=int,
         default=None,
-        help="Limit number of examples per task (for debugging only)"
+        help="Limit number of examples per task (for debugging only)",
     )
     parser.add_argument(
         "--output-dir",
         type=str,
         default="./eval_results",
-        help="Directory to save results"
+        help="Directory to save results",
     )
 
     args = parser.parse_args()
@@ -46,7 +43,7 @@ def main():
         pretrained=args.path_to_model,
         device=device,
         tokenizer=args.path_to_model,
-        trust_remote_code=True
+        trust_remote_code=True,
     )
 
     results = evaluate(

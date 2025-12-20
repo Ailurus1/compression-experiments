@@ -4,7 +4,6 @@ import sys
 import traceback
 from pathlib import Path
 
-import torch
 from awq import AutoAWQForCausalLM
 from transformers import AutoTokenizer
 from datasets import load_dataset
@@ -16,32 +15,32 @@ def main() -> None:
         "--path-to-model",
         type=str,
         default="Qwen/Qwen3-8B",
-        help="Path to the original model (local or Hugging Face hub). Default: Qwen/Qwen3-8B"
+        help="Path to the original model (local or Hugging Face hub). Default: Qwen/Qwen3-8B",
     )
     parser.add_argument(
         "--output-dir",
         type=str,
         default="./compressed_model",
-        help="Directory to save the quantized model. Default: ./compressed_model"
+        help="Directory to save the quantized model. Default: ./compressed_model",
     )
     parser.add_argument(
         "--quant-config",
         type=str,
         default='{"zero_point": true, "q_group_size": 128, "w_bit": 4, "version": "GEMM"}',
-        help="Quantization configuration as a JSON string. Default: 4-bit GEMM"
+        help="Quantization configuration as a JSON string. Default: 4-bit GEMM",
     )
     parser.add_argument(
         "--calib-data",
         type=str,
         default="wikitext",
         choices=["wikitext", "dolly"],
-        help="Calibration dataset: 'wikitext' or 'dolly'. Default: wikitext"
+        help="Calibration dataset: 'wikitext' or 'dolly'. Default: wikitext",
     )
     parser.add_argument(
         "--max-calib-samples",
         type=int,
         default=128,
-        help="Maximum number of calibration samples. Default: 128"
+        help="Maximum number of calibration samples. Default: 128",
     )
     args = parser.parse_args()
 
@@ -57,22 +56,25 @@ def main() -> None:
         )
 
         if args.calib_data == "wikitext":
-            calib_data = load_dataset('wikitext', 'wikitext-2-raw-v1', split='train')
-            calib_data = [text for text in calib_data['text'] 
-                          if text.strip() != '' and len(text.split()) > 20]
+            calib_data = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
+            calib_data = [
+                text
+                for text in calib_data["text"]
+                if text.strip() != "" and len(text.split()) > 20
+            ]
         else:
-            calib_data = load_dataset('databricks/databricks-dolly-15k', split='train')
+            calib_data = load_dataset("databricks/databricks-dolly-15k", split="train")
             calib_data = [
                 f"{example['instruction']}\n{example['context']}\n{example['response']}"
                 for example in calib_data
             ]
-        calib_data = calib_data[:args.max_calib_samples]
+        calib_data = calib_data[: args.max_calib_samples]
 
         model.quantize(
             tokenizer,
             quant_config=quant_config,
             calib_data=calib_data,
-            max_calib_samples=args.max_calib_samples
+            max_calib_samples=args.max_calib_samples,
         )
 
         model.save_quantized(output_dir)
@@ -90,6 +92,7 @@ def main() -> None:
         print(f"Error during quantization: {e}")
         traceback.print_exc()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
