@@ -3,9 +3,13 @@ import argparse
 from pathlib import Path
 
 import torch
-from lighteval import evaluate
-from lighteval.models.hf_model import HuggingFaceModel
+from transformers import AutoModelForCausalLM
+from lighteval.models.transformers.transformers_model import (
+    TransformersModel,
+    TransformersModelConfig,
+)
 from lighteval.logging.evaluation_tracker import EvaluationTracker
+from lighteval.pipeline import ParallelismManager, Pipeline, PipelineParameters
 
 
 def main():
@@ -39,19 +43,23 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    model_adapter = HuggingFaceModel(
-        pretrained=args.path_to_model,
-        device=device,
-        tokenizer=args.path_to_model,
-        trust_remote_code=True,
+    model = AutoModelForCausalLM.from_pretrained(args.path_to_model, device_map="auto")
+
+    config = TransformersModelConfig(model_name=args.path_to_model, batch_size=1)
+    model = TransformersModel.from_model(model, config)
+
+    pipeline_params = PipelineParameters(
+        launcher_type=ParallelismManager.NONE, max_samples=args.limit
     )
 
-    results = evaluate(
-        model=model_adapter,
-        tasks=args.tasks,
-        limit=args.limit,
+    pipeline = Pipeline(
+        model=model,
+        pipeline_parameters=pipeline_params,
         evaluation_tracker=EvaluationTracker(output_dir=output_dir),
+        tasks=args.tasks,
     )
+
+    results = pipeline.evaluate()
 
     for task_name, task_results in results.items():
         if "results" in task_results:
@@ -66,7 +74,7 @@ def main():
     with open(results_file, "w", encoding="utf-8") as file:
         json.dump(results, file, indent=2)
 
-    print(f"\nResults are saved to: {results_file}")
+    print(f"Results are saved in: {results_file}")
 
 
 if __name__ == "__main__":
