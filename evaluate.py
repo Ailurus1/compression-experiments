@@ -1,4 +1,5 @@
 import os
+import argparse
 import json
 import subprocess
 from typing import Optional, Tuple
@@ -50,3 +51,18 @@ def calculate_score(source_model: str, compressed_model_dir: str, original_perfo
     print(f"Final Score = {total_score}")
 
     return total_score, original_performance
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--path-to-original-model",
+        type=str,
+        default="Qwen/Qwen3-8B",
+    )
+    parser.add_argument(
+        "--path-to-compressed-model",
+        type=str,
+    )
+    args = parser.parse_args()
+
+    _, _ = calculate_score(args.path_to_original_model, args.path_to_compressed_model)

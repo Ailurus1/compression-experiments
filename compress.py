@@ -35,7 +35,7 @@ def perform_compression(path_to_model: str, compression_type: str, output_dir: s
         pass
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Quantize a model using AutoAWQ")
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--path-to-model",
         type=str,
