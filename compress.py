@@ -1,13 +1,38 @@
 import argparse
-import json
-import sys
-import traceback
+import subprocess
 from pathlib import Path
 
-from awq import AutoAWQForCausalLM
-from transformers import AutoTokenizer
-from datasets import load_dataset
+from get_model_stats import get_model_params, get_model_size_gb
+from evaluate import calculate_score
 
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from llmcompressor.modifiers.smoothquant import SmoothQuantModifier
+from llmcompressor.modifiers.quantization import GPTQModifier
+from llmcompressor.modifiers.pruning import SparseGPTModifier
+from llmcompressor import oneshot
+
+
+compression_type_to_recipes = {
+    "GPTQ:W4A16": [GPTQModifier(scheme="W4A16", targets="Linear", ignore=["lm_head"])],
+    "GPTQ:W8A8": [GPTQModifier(scheme="W8A8", targets="Linear", ignore=["lm_head"])],
+    "SparseGPT+GPTQ:W4A16": [SparseGPTModifier(sparcity=0.5, mask_structure="2:4", targets="Linear", ignore=["lm_head"]), GPTQModifier(scheme="W4A16", targets="Linear", ignore=["lm_head"])],
+    "SMQ+GPTQ:W4A16": [SmoothQuantModifier(smoothing_strength=0.8),GPTQModifier(scheme="W4A16", targets="Linear", ignore=["lm_head"]),]
+}
+
+def perform_compression(path_to_model: str, compression_type: str, output_dir: str) -> None:
+    if type != "BNB":
+        recipe = compression_type_to_recipes[compression_type]
+
+        oneshot(
+            model=path_to_model,
+            dataset="open_platypus",
+            recipe=recipe,
+            output_dir=output_dir,
+            max_seq_length=256,
+            num_calibration_samples=256,
+        )
+    else:
+        pass
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Quantize a model using AutoAWQ")
@@ -15,83 +40,38 @@ def main() -> None:
         "--path-to-model",
         type=str,
         default="Qwen/Qwen3-8B",
-        help="Path to the original model (local or Hugging Face hub). Default: Qwen/Qwen3-8B",
     )
     parser.add_argument(
-        "--output-dir",
+        "--type",
         type=str,
-        default="./compressed_model",
-        help="Directory to save the quantized model. Default: ./compressed_model",
-    )
-    parser.add_argument(
-        "--quant-config",
-        type=str,
-        default='{"zero_point": true, "q_group_size": 128, "w_bit": 4, "version": "GEMM"}',
-        help="Quantization configuration as a JSON string. Default: 4-bit GEMM",
-    )
-    parser.add_argument(
-        "--calib-data",
-        type=str,
-        default="wikitext",
-        choices=["wikitext", "dolly"],
-        help="Calibration dataset: 'wikitext' or 'dolly'. Default: wikitext",
-    )
-    parser.add_argument(
-        "--max-calib-samples",
-        type=int,
-        default=128,
-        help="Maximum number of calibration samples. Default: 128",
+        choices=["GPTQ:W4A16", "GPTQ:W8A8", "BNB:INT8", "BNB:INT4", "SparseGPT+GPTQ:W4A16", "SMQ+GPTQ:W4A16", "all"],
+        default='all',
     )
     args = parser.parse_args()
 
-    output_dir = Path(args.output_dir)
+    output_dir = Path(f"Qwen3-8B-{args.type.replace(':', '_')}")
     output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = str(output_dir)
 
-    quant_config = json.loads(args.quant_config)
+    model = AutoModelForCausalLM.from_pretrained(args.path_to_model, device_map="auto")
 
-    try:
-        model = AutoAWQForCausalLM.from_pretrained(args.path_to_model)
-        tokenizer = AutoTokenizer.from_pretrained(
-            args.path_to_model, trust_remote_code=True
-        )
+    original_model_params = get_model_params(model)
+    original_model_size = get_model_size_gb(model)
 
-        if args.calib_data == "wikitext":
-            calib_data = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
-            calib_data = [
-                text
-                for text in calib_data["text"]
-                if text.strip() != "" and len(text.split()) > 20
-            ]
-        else:
-            calib_data = load_dataset("databricks/databricks-dolly-15k", split="train")
-            calib_data = [
-                f"{example['instruction']}\n{example['context']}\n{example['response']}"
-                for example in calib_data
-            ]
-        calib_data = calib_data[: args.max_calib_samples]
+    print(f"Total model parameters: {original_model_params}")
+    print(f"Model size (Gb): {original_model_size}")
 
-        model.quantize(
-            tokenizer,
-            quant_config=quant_config,
-            calib_data=calib_data,
-            max_calib_samples=args.max_calib_samples,
-        )
+    if args.type == "all":
+        modifications = list(compression_type_to_recipes.keys())
+    else:
+        modifications = [args.type]
 
-        model.save_quantized(output_dir)
-        tokenizer.save_pretrained(output_dir)
+    original_performance = None
+    for modification in modifications:
+        print(f"Performing model compression using {modification}...")
+        perform_compression(args.path_to_model, modification, output_path)
 
-        with open(output_dir / "quant_config.json", "w", encoding="utf-8") as f:
-            json.dump(quant_config, f, indent=2)
-
-        print(f"Model saved to: {output_dir.absolute()}")
-
-    except ImportError:
-        print("Error: AutoAWQ is not installed")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error during quantization: {e}")
-        traceback.print_exc()
-        sys.exit(1)
+        _, original_performance = calculate_score(args.path_to_model, output_path, original_performance=original_performance)
 
 
 if __name__ == "__main__":
