@@ -1,4 +1,5 @@
 import os
+import json
 import subprocess
 from typing import Optional, Tuple
 
@@ -17,7 +18,10 @@ def evaluate_mmlu(path_to_model: str) -> float:
 
     subprocess.run("./lm_eval.sh", shell=True)
 
-    return 1
+    with open(os.environ["RUN_NAME"], 'r', encoding='utf-8') as file:
+        results = json.load(file)
+    
+    return results["results"]["mmlu"]["acc,none"]
 
 def calculate_score(source_model: str, compressed_model_dir: str, original_performance: Optional[float] = None) -> Tuple[float, float]:
     original_model = AutoModelForCausalLM.from_pretrained(source_model, device_map="auto")
