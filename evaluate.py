@@ -12,6 +12,13 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 def evaluate_mmlu(path_to_model: str) -> float:
     model_dir = '"' + path_to_model + '"'
     tp_size = torch.cuda.device_count()
+
+    if 'BnB' in model_dir:
+        os.environ["BACKEND"] = 'hf'
+        os.environ["MODEL_PARAMS"] = 'device_map="auto"'
+    else:
+        os.environ["BACKEND"] = 'vllm'
+        os.environ["MODEL_PARAMS"] = 'attention_backend="FLEX_ATTENTION",tensor_parallel_size=$TP_SIZE'
     
     os.environ["MODEL_PATH"] = model_dir
     os.environ["TP_SIZE"] = str(tp_size)
