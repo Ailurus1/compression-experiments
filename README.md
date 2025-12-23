@@ -7,6 +7,12 @@ For calibration we used dataset open_platypus
 
 ## How to reproduce
 
+Download the dataset (will be used only for finetuning)
+```bash
+wget https://people.eecs.berkeley.edu/~hendrycks/data.tar
+tar -xvf data.tar
+```
+
 Install (it will use python-venv)
 ```bash
 sudo chmod +x setup_env.sh
@@ -23,6 +29,11 @@ To perform single experiment with metrics calculation
 python3 evaluate.py --original-model <...> --compressed-model <...>
 ```
 
+To finetune the model
+```bash
+python3 train.py --model_path <...> --mmlu_train_path <...> --n_train_samples 1000 --train_outdir <...>
+```
+
 ## Results
 
 | Model | Size (Gb) | Performance (MMLU) | Compression Ratio | Performance Drop | Score |
@@ -37,3 +48,22 @@ python3 evaluate.py --original-model <...> --compressed-model <...>
 > **Note**:  
 > - BNB - Bits-And-Bytes, means LLM.Int8() dynamic quantization.  
 > - GPTQ and SmoothQuant are static quantization, so probably these models have lower latency, however only W8A8 quantization performs matmul in full int8 precision and perhaps the fastest one in compute-intensive case.
+
+For finetuning we have selected BNB-INT8 model. It was tuned on 1000 random samples from auxiliary_train split in MMLU benchmark (it's not used for validation).
+
+### Result
+**Qwen3-8B-BNB-INT8-Finetuned**  
+Score: 0,7617
+
+It's the quality of the full model achieved for INT8 model. Other quantized models were not finetuned because of the lack of time.
+
+## Models
+- QWEN3-8B model: Qwen/Qwen3-8B
+- QWEN3-8B-BNB-INT8: cofofprom/QWEN3-8B-BnB-8bit
+- QWEN3-8B-BNB-INT4: cofofprom/QWEN3-8B-BnB-4bit
+- QWEN3-8B-GPTQ-W8A8: Ailurus/Qwen3-8B-GPTQ-W4A16 
+- QWEN3-8B-GPTQ-W4A16: Ailurus/Qwen3-8B-GPTQ-W4A16 
+- Qwen3-8B-SmoothQuant-GPTQ-W4A16: Ailurus/Qwen3-8B-SmoothQuant-GPTQ-W4A16
+- QWEN3-8B-BNB-INT8-finetuned: cofofprom/QWEN3-8B-BnB-8bit-finetune
+
+
