@@ -1,0 +1,4 @@
+torch>=2.6.4
+transformers
+llmcompressor
+lm-eval[vllm]==0.4.9.2
