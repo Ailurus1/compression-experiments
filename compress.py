@@ -8,14 +8,12 @@ from evaluate import calculate_score
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from llmcompressor.modifiers.smoothquant import SmoothQuantModifier
 from llmcompressor.modifiers.quantization import GPTQModifier
-from llmcompressor.modifiers.pruning import SparseGPTModifier
 from llmcompressor import oneshot
 
 
 compression_type_to_recipes = {
     "GPTQ:W4A16": [GPTQModifier(scheme="W4A16", targets="Linear", ignore=["lm_head"])],
     "GPTQ:W8A8": [GPTQModifier(scheme="W8A8", targets="Linear", ignore=["lm_head"])],
-    "SparseGPT+GPTQ:W4A16": [SparseGPTModifier(sparcity=0.5, mask_structure="2:4", targets="Linear", ignore=["lm_head"]), GPTQModifier(scheme="W4A16", targets="Linear", ignore=["lm_head"])],
     "SMQ+GPTQ:W4A16": [SmoothQuantModifier(smoothing_strength=0.8),GPTQModifier(scheme="W4A16", targets="Linear", ignore=["lm_head"]),]
 }
 
@@ -44,7 +42,7 @@ def main() -> None:
     parser.add_argument(
         "--type",
         type=str,
-        choices=["GPTQ:W4A16", "GPTQ:W8A8", "BNB:INT8", "BNB:INT4", "SparseGPT+GPTQ:W4A16", "SMQ+GPTQ:W4A16", "all"],
+        choices=["GPTQ:W4A16", "GPTQ:W8A8", "BNB:INT8", "BNB:INT4", "SMQ+GPTQ:W4A16", "all"],
         default='all',
     )
     args = parser.parse_args()
