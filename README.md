@@ -37,6 +37,15 @@ To finetune the model
 python3 train.py --model_path <...> --mmlu_train_path <...> --n_train_samples 1000 --train_outdir <...>
 ```
 
+To run MMLU with the finetuned model (actually more convenient to do without any scripts):
+```bash
+lm_eval --model hf \
+  --model_args pretrained="cofofprom/QWEN3-8B-BnB-8bit-finetune",add_bos_token=true,device_map="auto",trust_remote_code=True \
+  --tasks mmlu \
+  --limit 12 \
+  --batch_size 'auto'
+```
+
 ## Results
 
 | Model | Size (Gb) | Performance (MMLU) | Compression Ratio | Performance Drop | Score |
