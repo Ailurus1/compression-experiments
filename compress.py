@@ -5,7 +5,8 @@ from pathlib import Path
 from get_model_stats import get_model_params, get_model_size_gb
 from evaluate import calculate_score
 
-from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from llmcompressor.modifiers.smoothquant import SmoothQuantModifier
 from llmcompressor.modifiers.quantization import GPTQModifier
 from llmcompressor import oneshot
@@ -18,7 +19,7 @@ compression_type_to_recipes = {
 }
 
 def perform_compression(path_to_model: str, compression_type: str, output_dir: str) -> None:
-    if type != "BNB":
+    if "BNB" not in compression_type:
         recipe = compression_type_to_recipes[compression_type]
 
         oneshot(
@@ -30,7 +31,28 @@ def perform_compression(path_to_model: str, compression_type: str, output_dir: s
             num_calibration_samples=256,
         )
     else:
-        pass
+        if "INT8" in compression_type:
+            quantization_config = BitsAndBytesConfig(load_in_8bit=True,
+                                                 llm_int8_enable_fp32_cpu_offload=True)
+        else:
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_use_double_quant=True
+            )
+
+        tokenizer = AutoTokenizer.from_pretrained(path_to_model)
+
+        model8bit = AutoModelForCausalLM.from_pretrained(
+            path_to_model,
+            dtype="auto",
+            device_map="auto",
+            quantization_config=quantization_config
+        )
+
+        model8bit.save_pretrained(output_dir)
+        tokenizer.save_pretrained(output_dir)
 
 def main() -> None:
     parser = argparse.ArgumentParser()
