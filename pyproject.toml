@@ -9,6 +9,7 @@ dependencies = [
     "pre-commit",
     "torch>=2.6.4",
     "transformers",
+    "bitsandbytes",
     "llmcompressor",
     "lm-eval[vllm]==0.4.9.2",
     "compressed-tensors==0.13.0",
