@@ -4,4 +4,3 @@ lm_eval --model vllm \
   --limit 12 \
   --output_path ./$RUN_NAME \
   --batch_size 'auto'
-  
