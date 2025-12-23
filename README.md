@@ -20,7 +20,7 @@ python3 compress.py
 
 To perform single experiment with metrics calculation
 ```bash
-python3 evaluate.py --path-to-original-model <...> --path-to-compressed-model <...>
+python3 evaluate.py --original-model <...> --compressed-model <...>
 ```
 
 ## Results

@@ -17,7 +17,7 @@ def evaluate_mmlu(path_to_model: str) -> float:
     os.environ["TP_SIZE"] = str(tp_size)
     os.environ["RUN_NAME"] = path_to_model.split("/")[-1] + "_results"
 
-    subprocess.run("./lm_eval.sh", shell=True)
+    subprocess.run("./lm_eval.sh", shell=True, check=True)
 
     with open(os.environ["RUN_NAME"], 'r', encoding='utf-8') as file:
         results = json.load(file)
@@ -55,13 +55,17 @@ def calculate_score(source_model: str, compressed_model_dir: str, original_perfo
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--path-to-original-model",
+        "--original-model",
         type=str,
         default="Qwen/Qwen3-8B",
     )
     parser.add_argument(
-        "--path-to-compressed-model",
+        "--compressed-model",
         type=str,
+        help="""In case model is not uploaded - try the following ones
+             Ailurus/Qwen3-8B-GPTQ-W8A8
+             Ailurus/Qwen3-8B-GPTQ-W4A16
+             Ailurus/Qwen3-8B-SmoothQuant-GPTQ-W4A16"""
     )
     args = parser.parse_args()
 
