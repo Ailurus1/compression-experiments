@@ -4,6 +4,9 @@ Experiments were performed on 2xT4 (Kaggle) environment with CUDA 12.3
 To run MMLU we used [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) project  
 Due to extremely long duration of benchmark evaluation we truncated each task to 12 sapmles per task so there are 2736 prompts in total  
 For calibration we used dataset open_platypus
+For training we used [this dataset](https://people.eecs.berkeley.edu/~hendrycks/data.tar) for MMLU from the auxiliary_train split.
+
+The work was done by Ilya Kozulin, Ilya Kostylev. 24IAD-2
 
 ## How to reproduce
 
@@ -51,7 +54,7 @@ python3 train.py --model_path <...> --mmlu_train_path <...> --n_train_samples 10
 
 For finetuning we have selected BNB-INT8 model. It was tuned on 1000 random samples from auxiliary_train split in MMLU benchmark (it's not used for validation).
 
-### Result
+### Finetuning result
 **Qwen3-8B-BNB-INT8-Finetuned**  
 Score: 0,7617
 
